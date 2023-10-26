@@ -14,5 +14,9 @@ env/
 .env
 .env.*
 
-chromediver
-.csv
+chromedriver
+
+*.csv
+
+# proxy logs
+bmp.log

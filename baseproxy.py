@@ -3,19 +3,30 @@ import json
 import time
 import csv
 
-
+from dotenv import load_dotenv
 from browsermobproxy import Server
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from tqdm import tqdm
+load_dotenv()
 
 
 MAX_TIME_WAIT = 10
 BROWSERMOB_PATH = os.getenv('BROWSERMOB_PATH', default=None)
+CHROMEDRIVER_PATH = os.getenv('CHROMEDRIVER_PATH', default=None)
+
+if not BROWSERMOB_PATH:
+    print('BROWSERMOB_PATH is required')
+    exit(1)
 
 
+if not CHROMEDRIVER_PATH:
+    print('CHROMEDRIVER_PATH is required')
+    exit(1)
 
 
 def get_headers():
@@ -127,7 +138,8 @@ option.add_argument("--window-size=1920,1080")
 option.add_argument('--ignore-certificate-errors')
 option.add_argument("--headless")
 option.add_argument('--proxy-server=%s' % proxy.proxy)
-browser = webdriver.Chrome(options=option)
+service = Service(executable_path=CHROMEDRIVER_PATH)
+browser = webdriver.Chrome(service=service, options=option)
 proxy.new_har(options={'captureHeaders': True, 'captureContent': True, 'captureBinaryContent': True})
 
 continue_scraping = True
@@ -136,13 +148,19 @@ base_div = '//*[@id="site-content"]/div/div[2]/div/div/div/div/div[1]/div'
 link_div = '/div/div[2]/div/div/div/div/a'
 
 # browser.get("https://www.airbnb.com/s/Arequipa--Peru/homes")
-browser.get('https://www.airbnb.com/s/Cerro-Colorado--Arequipa--Peru/homes?tab_id=home_tab&refinement_paths%5B%5D=%2Fhomes&flexible_trip_lengths%5B%5D=one_week&monthly_start_date=2023-11-01&monthly_length=3&price_filter_input_type=0&price_filter_num_nights=3&channel=EXPLORE&query=Cerro%20Colorado%2C%20Arequipa&date_picker_type=calendar&checkin=2023-11-13&checkout=2023-11-16&source=structured_search_input_header&search_type=user_map_move&zoom_level=15.229714687670123&place_id=ChIJtWT8JAw2QpER_-Scas3UB2Y&ne_lat=-16.366922141506357&ne_lng=-71.55483784171383&sw_lat=-16.407792036589974&sw_lng=-71.60095177152255&zoom=15.229714687670123&search_by_map=true')
+# browser.get('https://www.airbnb.com/s/Cerro-Colorado--Arequipa--Peru/homes?tab_id=home_tab&refinement_paths%5B%5D=%2Fhomes&flexible_trip_lengths%5B%5D=one_week&monthly_start_date=2023-11-01&monthly_length=3&price_filter_input_type=0&price_filter_num_nights=3&channel=EXPLORE&query=Cerro%20Colorado%2C%20Arequipa&date_picker_type=calendar&checkin=2023-11-13&checkout=2023-11-16&source=structured_search_input_header&search_type=user_map_move&zoom_level=15.229714687670123&place_id=ChIJtWT8JAw2QpER_-Scas3UB2Y&ne_lat=-16.366922141506357&ne_lng=-71.55483784171383&sw_lat=-16.407792036589974&sw_lng=-71.60095177152255&zoom=15.229714687670123&search_by_map=true')
+browser.get('https://www.airbnb.com/s/Jacobo-Hunter--Arequipa--Peru/homes?tab_id=home_tab&refinement_paths%5B%5D=%2Fhomes&flexible_trip_lengths%5B%5D=one_week&monthly_start_date=2023-11-01&monthly_length=3&price_filter_input_type=0&price_filter_num_nights=5&channel=EXPLORE&query=Jacobo%20Hunter%2C%20Arequipa&place_id=ChIJRyRrc6tKQpERSXUjC4fenis&date_picker_type=calendar&source=structured_search_input_header&search_type=filter_change&ne_lat=-16.42857697915527&ne_lng=-71.56113968482674&sw_lat=-16.462285150218907&sw_lng=-71.59918183768528&zoom=15.508462953795625&zoom_level=15&search_by_map=true&checkin=2023-12-10&checkout=2023-12-12')
+
+
+pages_counter = 1
+error_counts = 0
 
 while continue_scraping:
-    time.sleep(2)
+    time.sleep(1)
     
+    print('PAGE NUMBER:', pages_counter)
     elements = browser.find_elements("xpath", base_div)
-    for item in range(len(elements)):
+    for item in tqdm(range(len(elements))):
         parsed = []
         wait = WebDriverWait(browser, MAX_TIME_WAIT)
         try:
@@ -151,10 +169,10 @@ while continue_scraping:
             browser.execute_script("arguments[0].click();", element)
 
         except TimeoutException:
-            print("Element not found")
-            break
+            error_counts += 1
+            continue
 
-        time.sleep(4)
+        time.sleep(3)
         window_handles = browser.window_handles
         browser.switch_to.window(window_handles[-1])
         no_base_data = False
@@ -168,7 +186,7 @@ while continue_scraping:
                     print('error:', str(excep))
 
         if no_base_data:
-            print('returning to base!!!')
+            error_counts += 1
             browser.close()
             browser.switch_to.window(window_handles[0])
             continue
@@ -199,7 +217,6 @@ while continue_scraping:
             parsed.append(amenities)
             database.append(parsed)
         except Exception as excep:
-            print('error:', 'No amenities detected')
             parsed.append(0)
             parsed.append([])
             database.append(parsed)
@@ -216,7 +233,10 @@ while continue_scraping:
         print('loading new page')
         pagination_next[0].click()
 
+    pages_counter += 1
+
 print('---------------------------')
+print('Error counts:', error_counts)
 
 server.stop()
 browser.quit()

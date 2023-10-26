@@ -9,8 +9,8 @@ This data contains aditional information that could be used for an Data Analisys
 
 1. Create an virtual enviroment for python 3.6+ activate it and run `pip install -r requirements.txt`
 2. Require to install a proxy server to catch this requests, Install Browsemob Proxy from here https://bmp.lightbody.net/ and create and env variable called `BROWSERMOB_PATH`
-with the binary path for the downloaded Proxy `..\browsermob-proxy\bin\browsermob-proxy`
-3. Download a chromedriver for Selenium and create a env path variable for this
+with the binary path for the downloaded Proxy 
+3. Download a chromedriver for Selenium and create a env path variable, check `https://googlechromelabs.github.io/chrome-for-testing/#stable` for compatibility drivers.
 
 
 ## Running the scraper
@@ -26,3 +26,10 @@ You can repeat the search for all urls its desired and this generates csv files,
 ```
 python filter_files.py
 ```
+
+
+## Configuration
+
+`BROWSERMOB_PATH` - Path for Proxy server (`..\browsermob-proxy\bin\browsermob-proxy`)
+
+`CHROMEDRIVER_PATH` - Path for CHROMEDRIVER
