@@ -21,6 +21,9 @@ You can make a search on you browsert and get the URL to analyse that search rep
 python baseproxy.py
 ```
 
+![Alt text](https://github.com/reco92/scraperbnb/blob/main/imgs/sample.png)
+
+
 You can repeat the search for all urls its desired and this generates csv files, to can make a preview filter can concatenate this results use the following:
 
 ```
@@ -33,3 +36,5 @@ python filter_files.py
 `BROWSERMOB_PATH` - Path for Proxy server (`..\browsermob-proxy\bin\browsermob-proxy`)
 
 `CHROMEDRIVER_PATH` - Path for CHROMEDRIVER
+
+
